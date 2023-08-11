@@ -1,20 +1,50 @@
-class SignInController {
-  String _username = '', _password = '';
-  bool _fetching = false;
+import '../../../../domain/either.dart';
+import '../../../../domain/enums.dart';
+import '../../../../domain/models/user.dart';
+import '../../../../domain/repositories/autentication_repo.dart';
+import '../../../global/state_notifier.dart';
+import 'sign_in_state.dart';
 
-  String get username => _username;
-  String get password => _password;
-  bool get fetching => _fetching;
+class SignInController extends StateNotifier<SignInState> {
+  SignInController(
+    super.state, {
+    required this.authenticationRepository,
+  });
+
+  SignInState _state = SignInState();
+
+  final AuthenticationRepo authenticationRepository;
 
   void onUserNameChanged(String text) {
-    _username = text.trim();
+    onlyUpdate(
+      state.copyWith(
+        username: text.toLowerCase(),
+      ),
+    );
   }
 
   void onPasswordChanged(String text) {
-    _password = text.replaceAll(' ', '');
+    onlyUpdate(
+      state.copyWith(
+        password: text.replaceAll(' ', ''),
+      ),
+    );
   }
 
   void onFetchingChanged(bool value) {
-    _fetching = value;
+    state = state.copyWith(fetching: value);
+  }
+
+  Future<Either<SignInFailure, User>> submit() async {
+    state = state.copyWith(fetching: true);
+    final result =
+        await authenticationRepository.signIn(state.username, state.password);
+
+    result.when(
+      (_) => state = state.copyWith(fetching: false),
+      (_) => null,
+    );
+
+    return result;
   }
 }

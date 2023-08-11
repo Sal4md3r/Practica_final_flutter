@@ -1,32 +1,26 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
 import '../../../domain/either.dart';
 import '../../../domain/enums.dart';
 import '../../../domain/models/user.dart';
 import '../../../domain/repositories/autentication_repo.dart';
+import '../local/session_service.dart';
+import '../remote/account_api.dart';
 import '../remote/authentication_api.dart';
-
-const _key = 'sessionId';
 
 class AuthenticationRepoImpl implements AuthenticationRepo {
   AuthenticationRepoImpl(
-    this._secureStorage,
     this._authApi,
+    this._sessionService,
+    this._accountAPI,
   );
 
-  final FlutterSecureStorage _secureStorage;
   final AuthenticationAPI _authApi;
-
-  @override
-  Future<User?> getUserData() {
-    return Future.value(User());
-  }
+  final SessionService _sessionService;
+  final AccountAPI _accountAPI;
 
   @override
   Future<bool> get isSignedIn async {
-    final sessionId = await _secureStorage.read(key: _key);
-
-    return sessionId != null;
+    final sesionId = await _sessionService.sessionId;
+    return sesionId != null;
   }
 
   @override
@@ -55,8 +49,15 @@ class AuthenticationRepoImpl implements AuthenticationRepo {
             return sessionId.when(
               (failure) => Either.left(failure),
               (sessionId) async {
-                await _secureStorage.write(key: _key, value: sessionId);
-                return Either.right(User());
+                await _sessionService.saveSessionId(sessionId);
+
+                final user = await _accountAPI.getAccount(sessionId);
+
+                if (user == null) {
+                  Either.left(SignInFailure.unknown);
+                }
+
+                return Either.right(user!);
               },
             );
           },
@@ -66,7 +67,5 @@ class AuthenticationRepoImpl implements AuthenticationRepo {
   }
 
   @override
-  Future<void> signOut() {
-    return _secureStorage.delete(key: _key);
-  }
+  Future<void> signOut() => _sessionService.signOut();
 }

@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 
 import 'app/data/http/http.dart';
 import 'app/data/services/constantes.dart';
+import 'app/data/services/local/session_service.dart';
+import 'app/data/services/remote/account_api.dart';
 import 'app/data/services/remote/authentication_api.dart';
 import 'app/data/services/remote/internetChecker.dart';
 import 'app/data/services/repos_implementation/account_repo_impl.dart';
@@ -15,8 +17,19 @@ import 'app/domain/repositories/account_repository.dart';
 import 'app/domain/repositories/autentication_repo.dart';
 import 'app/domain/repositories/conectivity_repo.dart';
 import 'app/my_app.dart';
+import 'app/presentation/global/controllers/session_controller.dart';
 
 void main() {
+  final sessionService = SessionService(
+    const FlutterSecureStorage(),
+  );
+
+  final httpAPI = Http(
+    client: http.Client(),
+    baseUrl: ConstantesApi.baseUrl,
+    apiKey: ConstantesApi.apiKey,
+  );
+  final accountAPI = AccountAPI(httpAPI);
   runApp(
     MultiProvider(
       providers: [
@@ -31,22 +44,25 @@ void main() {
         Provider<AuthenticationRepo>(
           create: (context) {
             return AuthenticationRepoImpl(
-              const FlutterSecureStorage(),
               AuthenticationAPI(
-                Http(
-                  client: http.Client(),
-                  baseUrl: ConstantesApi.baseUrl,
-                  apiKey: ConstantesApi.apiKey,
-                ),
+                httpAPI,
               ),
+              sessionService,
+              accountAPI,
             );
           },
         ),
         Provider<AccountRepository>(
           create: (context) {
-            return AccountRepoImpl();
+            return AccountRepoImpl(
+              accountAPI,
+              sessionService,
+            );
           },
-        )
+        ),
+        ChangeNotifierProvider<SessionController>(
+          create: (_) => SessionController(),
+        ),
       ],
       child: const MyApp(),
     ),
