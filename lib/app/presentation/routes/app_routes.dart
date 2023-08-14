@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../modules/home/views/homeView.dart';
+import '../modules/home/views/home_view.dart';
 import '../modules/sign_in/views/sign_in_view.dart';
 import '../modules/splash/views/splash_view.dart';
 import 'routes.dart';

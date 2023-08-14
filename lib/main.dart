@@ -52,6 +52,11 @@ void main() {
             );
           },
         ),
+        ChangeNotifierProvider<SessionController>(
+          create: (context) => SessionController(
+            authenticationRepo: context.read(),
+          ),
+        ),
         Provider<AccountRepository>(
           create: (context) {
             return AccountRepoImpl(
@@ -59,9 +64,6 @@ void main() {
               sessionService,
             );
           },
-        ),
-        ChangeNotifierProvider<SessionController>(
-          create: (_) => SessionController(),
         ),
       ],
       child: const MyApp(),
